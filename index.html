@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kenangan Kita 💖</title>
+  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-align: center;
+      padding: 30px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }
+    .memory {
+      background: white;
+      color: #333;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+    .memory img, .memory video {
+      max-width: 100%;
+      border-radius: 8px;
+      max-height: 200px;
+      object-fit: cover;
+    }
+    input, textarea, button {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background-color: #667eea;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #5a67d8;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.9);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      max-width: 90%;
+      max-height: 90%;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: left;
+      position: relative;
+    }
+    .modal-content img, .modal-content video {
+      width: 100%;
+      max-height: 400px;
+      display: block;
+      margin-bottom: 20px;
+    }
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 25px;
+      color: black;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Kenangan Kita 💖</h1>
+  <p>Upload foto/video kenangan dan klik untuk lihat lebih besar ✨</p>
+
+  <input type="text" id="memoryTitle" placeholder="Judul Memori" />
+  <textarea id="memoryDesc" placeholder="Deskripsi kenangan..."></textarea>
+  <input type="date" id="memoryDate" />
+  <br>
+  <input type="hidden"
+         role="uploadcare-uploader"
+         data-public-key="5dadc300080fd9ec8857"
+         data-multiple="true"
+         data-tabs="file url"
+         data-images-only="false"
+         id="uploadcareInput" />
+  <button onclick="openUploadcare()">Pilih Foto/Video</button>
+
+  <div class="gallery" id="gallery"></div>
+
+  <!-- Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modalContent">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <div id="modalMedia"></div>
+      <h2 id="modalTitle"></h2>
+      <p id="modalDesc"></p>
+      <small id="modalDate"></small>
+    </div>
+  </div>
+
+  <script>
+    const memories = [];
+
+    async function openUploadcare() {
+      const widget = uploadcare.Widget('#uploadcareInput');
+      const dialog = widget.openDialog();
+
+      dialog.done(async (fileGroup) => {
+        const title = document.getElementById('memoryTitle').value;
+        const desc = document.getElementById('memoryDesc').value;
+        const date = document.getElementById('memoryDate').value;
+
+        let files = [];
+        if (fileGroup.files) {
+          files = await Promise.all(fileGroup.files());
+        } else {
+          files = [await fileGroup];
+        }
+
+        files.forEach(info => {
+          const mem = {
+            url: info.cdnUrl,
+            mime: info.mimeType,
+            title,
+            desc,
+            date
+          };
+          memories.push(mem);
+        });
+
+        renderGallery();
+
+        // Reset form
+        document.getElementById('memoryTitle').value = '';
+        document.getElementById('memoryDesc').value = '';
+        document.getElementById('memoryDate').value = '';
+      });
+    }
+
+    function renderGallery() {
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = memories.map((mem, i) => `
+        <div class="memory" onclick="openModal(${i})">
+          ${mem.mime.startsWith("image") ?
+            `<img src="${mem.url}" alt="${mem.title}" />` :
+            `<video src="${mem.url}" muted autoplay loop></video>`
+          }
+          <h3>${mem.title}</h3>
+          <p>${mem.date}</p>
+        </div>
+      `).join('');
+    }
+
+    function openModal(index) {
+      const mem = memories[index];
+      const media = mem.mime.startsWith("image") ?
+        `<img src="${mem.url}" alt="${mem.title}" />` :
+        `<video src="${mem.url}" controls autoplay></video>`;
+
+      document.getElementById('modalMedia').innerHTML = media;
+      document.getElementById('modalTitle').textContent = mem.title;
+      document.getElementById('modalDesc').textContent = mem.desc;
+      document.getElementById('modalDate').textContent = mem.date;
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+      document.getElementById('modalMedia').innerHTML = '';
+    }
+  </script>
+
+</body>
+</html>
